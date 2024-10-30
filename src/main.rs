@@ -1,5 +1,6 @@
 
 use std::fmt;
+use std::process::Command;
 use iced::widget::{column, row, combo_box, text};
 use iced::Element;
 
@@ -44,6 +45,15 @@ impl Settings {
                     + " (" 
                     + &self.latency_as_str()
                     + "ms)";
+
+                // actually execute the change
+                let cmd = format!("pw-metadata -n settings 0 clock.force-quantum {}", buf_size);
+
+                Command::new("sh")
+                    .arg("-c")
+                    .arg(cmd)
+                    .output()
+                    .expect("");
             }
             Message::UpdateSampleRate(rate) => {
                 self.sample_rate = Some(rate);
