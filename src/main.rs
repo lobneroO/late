@@ -60,6 +60,15 @@ impl Settings {
                 self.sr_text = 
                     rate.to_string()
                     + " Hz";
+
+                // actually execute the change
+                let cmd = format!("pw-metadata -n settings 0 clock.force-rate {}", rate);
+
+                Command::new("sh")
+                    .arg("-c")
+                    .arg(cmd)
+                    .output()
+                    .expect("");
             }
         }
     }
