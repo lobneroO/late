@@ -22,9 +22,8 @@ struct Settings {
 }
 
 fn get_current_sample_rate() -> Option<SampleRate> {
-    return None;
     // fetch the current sample rate by terminal command
-    let cmd_str = format!("pw-metadata -n settings 0 clock.rate");
+    let cmd_str = "pw-metadata -n settings 0 clock.force-rate";
 
     let output = Command::new("sh")
         .arg("-c")
@@ -36,7 +35,40 @@ fn get_current_sample_rate() -> Option<SampleRate> {
     // the response lookse something like this
     /*
     * Found "settings" metadata 31
-    * update: id:0 key:'clock.rate' value:'48000' type:''
+    * update: id:0 key:'clock.force-rate' value:'48000' type:''
+    */
+    let cmd_return_str = String::from_utf8(output.stdout).unwrap();
+    // first remove everything until "value:'"
+    let sub1 = &cmd_return_str[cmd_return_str.find("value:'").unwrap_or(0)..];
+    // now remove the "value:'" itself
+    let sub2 = &sub1["value:'".len()..];
+    // lastly, remove everything after the (now) first "'",
+    // as that concludes the actual value
+    let sub3 = &sub2[0..sub2.find("'").unwrap_or(sub2.len())];
+
+    // turn it into the option for the combo box
+    let rate = sub3.parse();
+    match rate {
+        Ok(r) => Some(r),
+        Err(_) => None,
+    }
+}
+
+fn get_current_buffer_size() -> Option<BufferSize> {
+    // fetch the current sample rate by terminal command
+    let cmd_str = "pw-metadata -n settings 0 clock.force-quantum";
+
+    let output = Command::new("sh")
+        .arg("-c")
+        .stdout(Stdio::piped())
+        .arg(cmd_str)
+        .output()
+        .unwrap();
+
+    // the response lookse something like this
+    /*
+    * Found "settings" metadata 31
+    * update: id:0 key:'clock.force-quantum' value:'128' type:''
     */
     let cmd_return_str = String::from_utf8(output.stdout).unwrap();
     // first remove everything until "value:'"
@@ -59,9 +91,8 @@ impl Settings {
 
     fn new() -> Self {
         Self {
-            // TODO: should query the current buffer size and sample rate
             buffer_sizes: combo_box::State::new(BufferSize::ALL.to_vec()),
-            buffer_size: None,
+            buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
             sample_rates: combo_box::State::new(SampleRate::ALL.to_vec()),
             sample_rate: get_current_sample_rate(),
@@ -70,7 +101,6 @@ impl Settings {
     }
 
     fn update(&mut self, message: Message) {
-        // TODO:
         match message {
             Message::UpdateBufferSize(buf_size) => {
                 self.buffer_size = Some(buf_size);
@@ -178,6 +208,42 @@ impl BufferSize {
 
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseBufferSizeError(String);
+impl ParseBufferSizeError {
+    pub fn new(msg: &str) -> Self {
+        Self(msg.to_owned())
+    }
+}
+
+impl std::str::FromStr for BufferSize {
+    type Err = ParseRateError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // This is the worst code I have written in a while :)
+        if s == "64" {
+            Ok(BufferSize::Buf64)
+        }
+        else if s == "128" {
+            Ok(BufferSize::Buf128)
+        }
+        else if s == "256" {
+            Ok(BufferSize::Buf256)
+        }
+        else if s == "512" {
+            Ok(BufferSize::Buf512)
+        }
+        else if s == "1024" {
+            Ok(BufferSize::Buf1024)
+        }
+        else if s == "2048" {
+            Ok(BufferSize::Buf2048)
+        }
+        else {
+            Err(ParseRateError::new("Invalid sample rate!"))
+        }
+    }
+}
+
 impl fmt::Display for BufferSize {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -252,7 +318,6 @@ impl std::str::FromStr for SampleRate {
         else {
             Err(ParseRateError::new("Invalid sample rate!"))
         }
-
     }
 }
 
@@ -265,7 +330,7 @@ impl Settings{
 
     /// @returns latency in milliseconds
     fn latency(&self) -> f32 {
-        if self.buffer_size != None && self.sample_rate != None {
+        if self.buffer_size.is_some() && self.sample_rate.is_some() {
             let buf_size = self.buffer_size.unwrap().as_uint() as f32;
             let sample_rate = self.sample_rate.unwrap().as_uint() as f32;
             buf_size * 1000.0 / sample_rate
