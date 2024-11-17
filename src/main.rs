@@ -1,27 +1,52 @@
 
-use std::fmt;
+// use std::fmt;
 use std::process::{Command, Stdio};
 use iced::widget::{column, row, combo_box, text};
 use iced::Element;
 
 #[derive(Debug, Clone)]
 enum Message {
-    UpdateBufferSize(BufferSize),
-    UpdateSampleRate(SampleRate),
+    UpdateBufferSize(u32),
+    UpdateSampleRate(u32),
 }
 
 struct Settings {
-    buffer_sizes: combo_box::State<BufferSize>,
-    buffer_size: Option<BufferSize>,
+    buffer_sizes: combo_box::State<u32>,
+    buffer_size: Option<u32>,
     // the text displayed when a buffer size is selected
     bs_text: String,
-    sample_rates: combo_box::State<SampleRate>,
-    sample_rate: Option<SampleRate>,
+    // sample_rates: combo_box::State<SampleRate>,
+    sample_rates: combo_box::State<u32>,
+    sample_rate: Option<u32>,
     // the text displayed when a sample rate is selected
     sr_text: String,
 }
 
-fn get_current_sample_rate() -> Option<SampleRate> {
+fn get_available_buffer_sizes() -> Vec<u32> {
+    vec![
+        0, // acts as a reset
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+    ]
+}
+
+fn get_available_sample_rates() -> Vec<u32> {
+    vec![
+        0, // acts as a reset
+        22050,
+        24000,
+        44100,
+        48000,
+        88200,
+        96000,
+    ]
+}
+
+fn get_current_sample_rate() -> Option<u32> {
     // fetch the current sample rate by terminal command
     let cmd_str = "pw-metadata -n settings 0 clock.force-rate";
 
@@ -54,7 +79,7 @@ fn get_current_sample_rate() -> Option<SampleRate> {
     }
 }
 
-fn get_current_buffer_size() -> Option<BufferSize> {
+fn get_current_buffer_size() -> Option<u32> {
     // fetch the current sample rate by terminal command
     let cmd_str = "pw-metadata -n settings 0 clock.force-quantum";
 
@@ -91,10 +116,10 @@ impl Settings {
 
     fn new() -> Self {
         Self {
-            buffer_sizes: combo_box::State::new(BufferSize::ALL.to_vec()),
+            buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
             buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
-            sample_rates: combo_box::State::new(SampleRate::ALL.to_vec()),
+            sample_rates: combo_box::State::new(get_available_sample_rates()),
             sample_rate: get_current_sample_rate(),
             sr_text: String::new(),
         }
@@ -161,9 +186,8 @@ impl Settings {
             column![
                 text("Sample Rate").size(20),
                 sample_rate_cbox,
-            ]
-        ]
-            .into()
+            ],
+        ].into()
     }
 }
 
@@ -171,41 +195,6 @@ impl Default for Settings {
     fn default() -> Self {
         Settings::new()
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum BufferSize {
-    Buf64,
-    Buf128,
-    Buf256,
-    Buf512,
-    #[default]
-    Buf1024,
-    Buf2048,
-}
-
-impl BufferSize {
-    const ALL: [BufferSize; 6] = [
-        BufferSize::Buf64,
-        BufferSize::Buf128,
-        BufferSize::Buf256,
-        BufferSize::Buf512,
-        BufferSize::Buf1024,
-        BufferSize::Buf2048,
-    ];
-
-    pub fn as_uint(&self) -> u32{
-        match self {
-            // There's probably a nicer way to do this, but it is late, I can't be bothered
-            BufferSize::Buf64 => 64,
-            BufferSize::Buf128 => 128,
-            BufferSize::Buf256 => 256,
-            BufferSize::Buf512 => 512,
-            BufferSize::Buf1024 => 1024,
-            BufferSize::Buf2048 => 2048,
-        }
-    }
-
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -216,108 +205,11 @@ impl ParseBufferSizeError {
     }
 }
 
-impl std::str::FromStr for BufferSize {
-    type Err = ParseRateError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // This is the worst code I have written in a while :)
-        if s == "64" {
-            Ok(BufferSize::Buf64)
-        }
-        else if s == "128" {
-            Ok(BufferSize::Buf128)
-        }
-        else if s == "256" {
-            Ok(BufferSize::Buf256)
-        }
-        else if s == "512" {
-            Ok(BufferSize::Buf512)
-        }
-        else if s == "1024" {
-            Ok(BufferSize::Buf1024)
-        }
-        else if s == "2048" {
-            Ok(BufferSize::Buf2048)
-        }
-        else {
-            Err(ParseRateError::new("Invalid sample rate!"))
-        }
-    }
-}
-
-impl fmt::Display for BufferSize {
-
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.as_uint().to_string())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum SampleRate {
-    Rate22050,
-    Rate24000,
-    Rate44100,
-    #[default]
-    Rate48000,
-    Rate96000,
-}
-
-impl SampleRate {
-    const ALL: [SampleRate; 5] = [
-        SampleRate::Rate22050,
-        SampleRate::Rate24000,
-        SampleRate::Rate44100,
-        SampleRate::Rate48000,
-        SampleRate::Rate96000,
-    ];
-
-    pub fn as_uint(&self) -> u32 {
-        match self {
-            SampleRate::Rate22050 => 22050,
-            SampleRate::Rate24000 => 24000,
-            SampleRate::Rate44100 => 44100,
-            SampleRate::Rate48000 => 48000,
-            SampleRate::Rate96000 => 96000,
-        }
-    }
-}
-
-impl fmt::Display for SampleRate {
-
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.as_uint().to_string())
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseRateError(String);
 impl ParseRateError {
     pub fn new(msg: &str) -> Self {
         Self(msg.to_owned())
-    }
-}
-
-impl std::str::FromStr for SampleRate {
-    type Err = ParseRateError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // This is the worst code I have written in a while :)
-        if s == "22050" {
-            Ok(SampleRate::Rate22050)
-        }
-        else if s == "24000" {
-            Ok(SampleRate::Rate24000)
-        }
-        else if s == "44100" {
-            Ok(SampleRate::Rate44100)
-        }
-        else if s == "48000" {
-            Ok(SampleRate::Rate48000)
-        }
-        else if s == "96000" {
-            Ok(SampleRate::Rate96000)
-        }
-        else {
-            Err(ParseRateError::new("Invalid sample rate!"))
-        }
     }
 }
 
@@ -331,8 +223,8 @@ impl Settings{
     /// @returns latency in milliseconds
     fn latency(&self) -> f32 {
         if self.buffer_size.is_some() && self.sample_rate.is_some() {
-            let buf_size = self.buffer_size.unwrap().as_uint() as f32;
-            let sample_rate = self.sample_rate.unwrap().as_uint() as f32;
+            let buf_size = self.buffer_size.unwrap() as f32;
+            let sample_rate = self.sample_rate.unwrap() as f32;
             buf_size * 1000.0 / sample_rate
         }
         else {
