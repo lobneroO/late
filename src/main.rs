@@ -1,5 +1,5 @@
+// (C) Tim Lobner
 
-// use std::fmt;
 use std::process::{Command, Stdio};
 use iced::widget::{column, row, combo_box, text};
 use iced::Element;
