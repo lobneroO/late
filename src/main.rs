@@ -11,7 +11,7 @@ enum Message {
     UpdateSampleRate(u32),
 }
 
-struct Settings {
+struct LateState {
     theme: Theme,
 
     buffer_sizes: combo_box::State<u32>,
@@ -115,7 +115,7 @@ fn get_current_buffer_size() -> Option<u32> {
     }
 }
 
-impl Settings {
+impl LateState {
 
     fn new() -> Self {
         Self {
@@ -193,7 +193,6 @@ impl Settings {
                 ]
             ]
             .spacing(20),
-            // .padding(20),
             row![
                 column![
                     text("Buffer Size (Latency):"),
@@ -205,7 +204,6 @@ impl Settings {
                 ],
             ]
             .spacing(20)
-            // .padding(20)
         ]
         .spacing(20)
         .padding(20)
@@ -219,9 +217,9 @@ impl Settings {
     }
 }
 
-impl Default for Settings {
+impl Default for LateState {
     fn default() -> Self {
-        Settings::new()
+        LateState::new()
     }
 }
 
@@ -241,7 +239,7 @@ impl ParseRateError {
     }
 }
 
-impl Settings{
+impl LateState{
     /// @returns latency in milliseconds as a String
     fn latency_as_str(&self) -> String {
         let l = self.latency();
@@ -262,7 +260,8 @@ impl Settings{
 }
 
 fn main() -> iced::Result {
-    iced::application("Late - Pipewire Preferences", Settings::update, Settings::view)
-        .theme(Settings::theme)
+    iced::application("Late - Pipewire Preferences", LateState::update, LateState::view)
+        .theme(LateState::theme)
+        .window_size(iced::Size::new(480.0, 200.0))
         .run()
 }
