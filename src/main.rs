@@ -1,16 +1,19 @@
 // (C) Tim Lobner
 
 use std::process::{Command, Stdio};
-use iced::widget::{column, row, combo_box, text};
-use iced::Element;
+use iced::widget::{column, row, combo_box, text, pick_list};
+use iced::{Element, Theme};
 
 #[derive(Debug, Clone)]
 enum Message {
+    ThemeChanged(Theme),
     UpdateBufferSize(u32),
     UpdateSampleRate(u32),
 }
 
 struct Settings {
+    theme: Theme,
+
     buffer_sizes: combo_box::State<u32>,
     buffer_size: Option<u32>,
     // the text displayed when a buffer size is selected
@@ -116,6 +119,7 @@ impl Settings {
 
     fn new() -> Self {
         Self {
+            theme: Theme::Dark,
             buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
             buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
@@ -127,6 +131,9 @@ impl Settings {
 
     fn update(&mut self, message: Message) {
         match message {
+            Message::ThemeChanged(theme) => {
+                self.theme = theme;
+            }
             Message::UpdateBufferSize(buf_size) => {
                 self.buffer_size = Some(buf_size);
                 self.bs_text = 
@@ -178,16 +185,29 @@ impl Settings {
             self.sample_rate.as_ref(),
             Message::UpdateSampleRate,
         );
-        row![
-            column![
-                text("Buffer Size (Latency):").size(20),
-                buf_size_cbox,
+        column![
+            row![
+                column![
+                    text("Theme:"),
+                    pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged),
+                    // width(Fill),
+                ]
             ],
-            column![
-                text("Sample Rate").size(20),
-                sample_rate_cbox,
-            ],
+            row![
+                column![
+                    text("Buffer Size (Latency):").size(20),
+                    buf_size_cbox,
+                ],
+                column![
+                    text("Sample Rate").size(20),
+                    sample_rate_cbox,
+                ],
+            ]
         ].into()
+    }
+
+    fn theme(&self) -> Theme {
+        self.theme.clone()
     }
 }
 
@@ -234,5 +254,7 @@ impl Settings{
 }
 
 fn main() -> iced::Result {
-    iced::run("Late - Pipewire Preferences", Settings::update, Settings::view)
+    iced::application("Late - Pipewire Preferences", Settings::update, Settings::view)
+        .theme(Settings::theme)
+        .run()
 }
