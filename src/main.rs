@@ -1,16 +1,19 @@
 // (C) Tim Lobner
 
 use std::process::{Command, Stdio};
-use iced::widget::{column, row, combo_box, text};
-use iced::Element;
+use iced::widget::{center, column, row, combo_box, text, pick_list};
+use iced::{Element, Theme};
 
 #[derive(Debug, Clone)]
 enum Message {
+    ThemeChanged(Theme),
     UpdateBufferSize(u32),
     UpdateSampleRate(u32),
 }
 
-struct Settings {
+struct LateState {
+    theme: Theme,
+
     buffer_sizes: combo_box::State<u32>,
     buffer_size: Option<u32>,
     // the text displayed when a buffer size is selected
@@ -112,10 +115,11 @@ fn get_current_buffer_size() -> Option<u32> {
     }
 }
 
-impl Settings {
+impl LateState {
 
     fn new() -> Self {
         Self {
+            theme: Theme::Dark,
             buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
             buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
@@ -127,6 +131,9 @@ impl Settings {
 
     fn update(&mut self, message: Message) {
         match message {
+            Message::ThemeChanged(theme) => {
+                self.theme = theme;
+            }
             Message::UpdateBufferSize(buf_size) => {
                 self.buffer_size = Some(buf_size);
                 self.bs_text = 
@@ -178,22 +185,41 @@ impl Settings {
             self.sample_rate.as_ref(),
             Message::UpdateSampleRate,
         );
-        row![
-            column![
-                text("Buffer Size (Latency):").size(20),
-                buf_size_cbox,
-            ],
-            column![
-                text("Sample Rate").size(20),
-                sample_rate_cbox,
-            ],
-        ].into()
+        let content = column![
+            row![
+                column![
+                    text("Theme:"),
+                    pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged),
+                ]
+            ]
+            .spacing(20),
+            row![
+                column![
+                    text("Buffer Size (Latency):"),
+                    buf_size_cbox,
+                ],
+                column![
+                    text("Sample Rate"),
+                    sample_rate_cbox,
+                ],
+            ]
+            .spacing(20)
+        ]
+        .spacing(20)
+        .padding(20)
+        .max_width(450);
+
+        center(content).into()
+    }
+
+    fn theme(&self) -> Theme {
+        self.theme.clone()
     }
 }
 
-impl Default for Settings {
+impl Default for LateState {
     fn default() -> Self {
-        Settings::new()
+        LateState::new()
     }
 }
 
@@ -213,7 +239,7 @@ impl ParseRateError {
     }
 }
 
-impl Settings{
+impl LateState{
     /// @returns latency in milliseconds as a String
     fn latency_as_str(&self) -> String {
         let l = self.latency();
@@ -234,5 +260,8 @@ impl Settings{
 }
 
 fn main() -> iced::Result {
-    iced::run("Late - Pipewire Preferences", Settings::update, Settings::view)
+    iced::application("Late - Pipewire Preferences", LateState::update, LateState::view)
+        .theme(LateState::theme)
+        .window_size(iced::Size::new(480.0, 200.0))
+        .run()
 }
