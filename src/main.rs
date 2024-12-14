@@ -1,7 +1,7 @@
 // (C) Tim Lobner
 
 use std::process::{Command, Stdio};
-use iced::widget::{column, row, combo_box, text, pick_list};
+use iced::widget::{center, column, row, combo_box, text, pick_list};
 use iced::{Element, Theme};
 
 #[derive(Debug, Clone)]
@@ -185,25 +185,33 @@ impl Settings {
             self.sample_rate.as_ref(),
             Message::UpdateSampleRate,
         );
-        column![
+        let content = column![
             row![
                 column![
                     text("Theme:"),
                     pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged),
-                    // width(Fill),
                 ]
-            ],
+            ]
+            .spacing(20),
+            // .padding(20),
             row![
                 column![
-                    text("Buffer Size (Latency):").size(20),
+                    text("Buffer Size (Latency):"),
                     buf_size_cbox,
                 ],
                 column![
-                    text("Sample Rate").size(20),
+                    text("Sample Rate"),
                     sample_rate_cbox,
                 ],
             ]
-        ].into()
+            .spacing(20)
+            // .padding(20)
+        ]
+        .spacing(20)
+        .padding(20)
+        .max_width(450);
+
+        center(content).into()
     }
 
     fn theme(&self) -> Theme {
