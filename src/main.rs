@@ -260,8 +260,26 @@ impl LateState{
 }
 
 fn main() -> iced::Result {
+    let icon = iced::window::icon::from_file("resources/late.ico");
+    let ico_opt: Option<iced::window::Icon> = icon.ok();
+    let win_settings = iced::window::Settings {
+        size: iced::Size::new(480.0, 200.0),
+        position: iced::window::Position::Default,
+        min_size: None,
+        max_size: None,
+        visible: true,
+        resizable: true,
+        decorations: true,
+        transparent: false,
+        level: iced::window::Level::Normal,
+        icon: ico_opt,
+        platform_specific: iced::window::settings::PlatformSpecific { application_id: "Late".to_owned(), override_redirect: false },
+        exit_on_close_request: true,
+    };
+
     iced::application("Late - Pipewire Preferences", LateState::update, LateState::view)
         .theme(LateState::theme)
         .window_size(iced::Size::new(480.0, 200.0))
+        .window(win_settings)
         .run()
 }
