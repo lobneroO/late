@@ -214,7 +214,10 @@ impl LateState {
 
                 self.profiles_names = combo_box::State::new(profile::get_profile_names(&self.profiles));
                 profile::save_profiles(&self.profiles);
-                print!("Saving!");
+
+                // Update the profile as well in order to write the saved name into the profile
+                // combo box
+                self.update(Message::UpdateProfile(self.profile_save_name.clone()));
             } 
             Message::UpdateProfileSaveName(pro) => {
                 self.profile_save_name = pro;
