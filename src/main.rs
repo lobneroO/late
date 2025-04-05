@@ -14,7 +14,7 @@ enum Message {
     UpdateBufferSize(u32),
     UpdateSampleRate(u32),
     SaveProfile,
-    LoadProfile(String),
+    UpdateProfile(String),
     UpdateProfileSaveName(String),
 }
 
@@ -191,8 +191,14 @@ impl LateState {
                 profile::save_profiles(&self.profiles);
                 print!("Saving!");
             } 
-            Message::LoadProfile(pro) => {
-                print!("Loading {}", pro);
+            Message::UpdateProfile(pro) => {
+                let chosen = profile::choose_profile(&self.profiles, &pro);
+                if chosen.is_some() {
+                    let profile = chosen.unwrap();
+                    self.sample_rate = Some(profile.sample_rate);
+                    self.buffer_size = Some(profile.buffer_size);
+                    self.profile = Some(profile.name.clone());
+                }
             }
             Message::UpdateProfileSaveName(pro) => {
                 self.profile_save_name = pro;
@@ -221,7 +227,7 @@ impl LateState {
             &self.profiles_names,
             "Profile",
             self.profile.as_ref(),
-            Message::LoadProfile,
+            Message::UpdateProfile,
         );
         let content = column![
             row![

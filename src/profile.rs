@@ -4,7 +4,9 @@ use std::fs::{self, File};
 use std::io::Write;
 use serde::{Serialize, Deserialize};
 
-static CONFIG_NAME: &str = "late_config.json";
+// TODO: save late's state (e.g. theme chosen)
+// static CONFIG_NAME: &str = "late_config.json";
+static PROFILES_NAME: &str = "late_profiles.json";
 
 /// Extra state which copies LateState::buffer_size and LateState::sample_rate
 /// in order to easily serialize and deserialize them.
@@ -42,7 +44,7 @@ pub fn ensure_config_file() -> std::io::Result<PathBuf> {
         }
 
         // ensure we can fetch the config file and its exists state
-        config.push(CONFIG_NAME);
+        config.push(PROFILES_NAME);
 
         let config_file_exists = fs::exists(&config);
         if config_file_exists.is_err() {
@@ -82,7 +84,8 @@ pub fn save_profiles(state: &Vec<LateProfile>) {
 }
 
 pub fn load_profiles() -> Vec<LateProfile> {
-    let config_path = ensure_config_file().unwrap_or(PathBuf::new());
+    let config_path = ensure_config_file().unwrap_or_default();
+    print!("Trying to read {}", config_path.to_str().unwrap());
     let file_contents = fs::read_to_string(config_path)
         .expect("Could not read profiles file!");
     serde_json::from_str(&file_contents).unwrap_or(vec![])
@@ -95,6 +98,20 @@ pub fn get_profile_names(profiles: &Vec<LateProfile>) -> Vec<String> {
         names.push(profile.name.clone());
     }
     names
+}
+
+pub fn choose_profile(profiles: &Vec<LateProfile>, name: &str) -> Option<LateProfile> {
+    for profile in profiles {
+        if profile.name == name {
+            let copy = LateProfile {
+                name: profile.name.clone(),
+                sample_rate: profile.sample_rate,
+                buffer_size: profile.buffer_size
+            };
+            return Some(copy);
+        }
+    }
+    None
 }
 
 
