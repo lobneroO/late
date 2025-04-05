@@ -5,3 +5,10 @@ edition = "2021"
 
 [dependencies]
 iced = { version = "0.13.1", features = ["image"] }
+serde = { version = "1.0", features = ["derive"]}
+serde_json = "1.0"
+
+# std::env::home_dir is deprecated and suggests using a crate
+# since late will only be useful on Linux, it shouldn't matter,
+# but the crate looks reasonable, too
+home = "0.5.11"
