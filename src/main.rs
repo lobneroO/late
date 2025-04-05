@@ -256,8 +256,13 @@ impl LateState {
             ]
             .spacing(20),
             row![
-                profile_cbox,
-                button("Delete Profile").on_press(Message::DeleteProfile),
+                column![
+                    text("Choose Profile:"),
+                    row! [
+                        profile_cbox,
+                        button("Delete Profile").on_press(Message::DeleteProfile),
+                    ].spacing(20)
+                ],
             ].spacing(20),
             row![
                 column![
@@ -271,8 +276,13 @@ impl LateState {
             ]
             .spacing(20),
             row![
-                profile_name_input,
-                button("Save Profile").on_press(Message::SaveProfile),
+                column![
+                    text("Save current profile:"),
+                    row![
+                        profile_name_input,
+                        button("Save Profile").on_press(Message::SaveProfile),
+                    ].spacing(20),
+                ],
             ].spacing(20),
         ]
         .spacing(20)
@@ -334,7 +344,7 @@ fn main() -> iced::Result {
     let icon = iced::window::icon::from_file("resources/late.ico");
     let ico_opt: Option<iced::window::Icon> = icon.ok();
     let win_settings = iced::window::Settings {
-        size: iced::Size::new(480.0, 280.0),
+        size: iced::Size::new(480.0, 330.0),
         position: iced::window::Position::Default,
         min_size: None,
         max_size: None,
