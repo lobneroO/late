@@ -334,7 +334,7 @@ fn main() -> iced::Result {
     let icon = iced::window::icon::from_file("resources/late.ico");
     let ico_opt: Option<iced::window::Icon> = icon.ok();
     let win_settings = iced::window::Settings {
-        size: iced::Size::new(480.0, 200.0),
+        size: iced::Size::new(480.0, 280.0),
         position: iced::window::Position::Default,
         min_size: None,
         max_size: None,
@@ -350,7 +350,6 @@ fn main() -> iced::Result {
 
     iced::application("Late - Pipewire Preferences", LateState::update, LateState::view)
         .theme(LateState::theme)
-        .window_size(iced::Size::new(480.0, 280.0))
         .window(win_settings)
         .run()
 }
