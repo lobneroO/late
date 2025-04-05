@@ -4,9 +4,9 @@ use std::process::{Command, Stdio};
 use iced::widget::{center, column, row, combo_box, text, pick_list, button};
 use iced::{Element, Theme};
 use serde::{Serialize, Deserialize};
-use std::path::Path;
 use std::path::PathBuf;
 use std::fs::{self, File};
+use std::io::Write;
 
 static CONFIG_NAME: &str = "late_config.json";
 
@@ -298,7 +298,7 @@ fn ensure_config_file() -> std::io::Result<PathBuf> {
     let home_opt = home::home_dir();
     if home_opt.is_some() {
         let mut config = home_opt.unwrap();
-        config.push(".confg/late");
+        config.push(".config/late");
 
         // ensure we can fetch the config dir and exists state
         let config_dir_exists = fs::exists(&config);
@@ -341,7 +341,6 @@ fn ensure_config_file() -> std::io::Result<PathBuf> {
 
 fn save_state(state: PipewireForceState) {
     let serialized = serde_json::to_string(&state);
-    println!("serialized = {}", serialized.unwrap());
     let config_file = match ensure_config_file(){
         Ok(c) => c,
         Err(e) => { 
@@ -350,12 +349,8 @@ fn save_state(state: PipewireForceState) {
         }
     };
 
-    match File::open(config_file) {
-        Ok(_) => print!(""),
-        Err(e) => {
-        print!("{}", e);
-    }
-    }
+    let f = File::create(config_file);
+    write!(f.unwrap(), "{}", serialized.unwrap());
 
 }
 
