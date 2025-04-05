@@ -14,6 +14,7 @@ enum Message {
     UpdateBufferSize(u32),
     UpdateSampleRate(u32),
     SaveProfile,
+    DeleteProfile,
     UpdateProfile(String),
     UpdateProfileSaveName(String),
 }
@@ -179,7 +180,31 @@ impl LateState {
                     Err(e) => println!("error setting sample rate: {e}"),
                 }
             }
-            Message::SaveProfile=> {
+            Message::UpdateProfile(pro) => {
+                let chosen = profile::choose_profile(&self.profiles, &pro);
+                if chosen.is_some() {
+                    let profile = chosen.unwrap();
+                    self.update(Message::UpdateSampleRate(profile.sample_rate));
+                    self.update(Message::UpdateBufferSize(profile.buffer_size));
+                    self.profile = Some(profile.name.clone());
+                } else if pro.is_empty() {
+                    // most likely a delete has happened
+                    self.profile = None;
+                }
+            }
+            Message::DeleteProfile => {
+                let profile_name = self.profile.clone().unwrap();
+                profile::remove_profile(&mut self.profiles, &profile_name);
+                self.profiles_names = combo_box::State::new(profile::get_profile_names(&self.profiles));
+                // saving writes the entire file new. since the profile is deleted from the vector,
+                // we save here in order to get it out of the profiles file
+                profile::save_profiles(&self.profiles);
+                // finally set the profile to empty, since the previously deleted profile must not
+                // be enabled anymore, but we have no better guess of what to choose (and we don't
+                // want to change the profile here)
+                self.update(Message::UpdateProfile("".to_string()));
+            }
+            Message::SaveProfile => {
                 let new_profile = LateProfile {
                     name: self.profile_save_name.clone(),
                     sample_rate: self.sample_rate.unwrap_or(0),
@@ -191,15 +216,6 @@ impl LateState {
                 profile::save_profiles(&self.profiles);
                 print!("Saving!");
             } 
-            Message::UpdateProfile(pro) => {
-                let chosen = profile::choose_profile(&self.profiles, &pro);
-                if chosen.is_some() {
-                    let profile = chosen.unwrap();
-                    self.update(Message::UpdateSampleRate(profile.sample_rate));
-                    self.update(Message::UpdateBufferSize(profile.buffer_size));
-                    self.profile = Some(profile.name.clone());
-                }
-            }
             Message::UpdateProfileSaveName(pro) => {
                 self.profile_save_name = pro;
             }
@@ -222,7 +238,6 @@ impl LateState {
         let profile_name_input = text_input("Profile Name", &self.profile_save_name)
             .on_input(Message::UpdateProfileSaveName)
             .on_submit(Message::SaveProfile);
-            // .spacing(20);
         let profile_cbox = combo_box(
             &self.profiles_names,
             "Profile",
@@ -239,6 +254,7 @@ impl LateState {
             .spacing(20),
             row![
                 profile_cbox,
+                button("Delete Profile").on_press(Message::DeleteProfile),
             ].spacing(20),
             row![
                 column![

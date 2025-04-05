@@ -114,4 +114,11 @@ pub fn choose_profile(profiles: &Vec<LateProfile>, name: &str) -> Option<LatePro
     None
 }
 
+pub fn remove_profile(profiles: &mut Vec<LateProfile>, name: &str) {
+    let index = profiles.iter().position(|x| x.name == name);
+    if let Some(i) = index {
+         profiles.remove(i);
+    }
+}
+
 
