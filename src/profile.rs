@@ -66,7 +66,7 @@ pub fn ensure_config_file() -> std::io::Result<PathBuf> {
 
 }
 
-pub fn save_state(state: LateProfile) {
+pub fn save_profiles(state: &Vec<LateProfile>) {
     let serialized = serde_json::to_string(&state);
     let config_file = match ensure_config_file(){
         Ok(c) => c,
@@ -81,10 +81,20 @@ pub fn save_state(state: LateProfile) {
 
 }
 
-pub fn load_profiles() -> Vec<String> {
-    let profiles = vec!["test1".to_string(), "test".to_string()];
+pub fn load_profiles() -> Vec<LateProfile> {
+    let config_path = ensure_config_file().unwrap_or(PathBuf::new());
+    let file_contents = fs::read_to_string(config_path)
+        .expect("Could not read profiles file!");
+    serde_json::from_str(&file_contents).unwrap_or(vec![])
+}
 
-    profiles
+pub fn get_profile_names(profiles: &Vec<LateProfile>) -> Vec<String> {
+    let mut names = Vec::<String>::with_capacity(profiles.len());
+
+    for profile in profiles {
+        names.push(profile.name.clone());
+    }
+    names
 }
 
 

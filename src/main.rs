@@ -14,7 +14,7 @@ enum Message {
     UpdateBufferSize(u32),
     UpdateSampleRate(u32),
     SaveProfile,
-    LoadProfile(String), // TODO: needs to be easily choosable in combobox
+    LoadProfile(String),
     UpdateProfileSaveName(String),
 }
 
@@ -34,7 +34,8 @@ struct LateState {
     sr_text: String,
     /// name of the current profile, if any
     profile: Option<String>,
-    profiles: combo_box::State<String>,
+    profiles_names: combo_box::State<String>,
+    profiles: Vec<LateProfile>,
     profile_save_name: String,
 }
 
@@ -88,11 +89,7 @@ fn get_current_sample_rate() -> Option<u32> {
     let sub3 = &sub2[0..sub2.find("'").unwrap_or(sub2.len())];
 
     // turn it into the option for the combo box
-    let rate = sub3.parse();
-    match rate {
-        Ok(r) => Some(r),
-        Err(_) => None,
-    }
+    sub3.parse().ok()
 }
 
 fn get_current_buffer_size() -> Option<u32> {
@@ -121,16 +118,12 @@ fn get_current_buffer_size() -> Option<u32> {
     let sub3 = &sub2[0..sub2.find("'").unwrap_or(sub2.len())];
 
     // turn it into the option for the combo box
-    let rate = sub3.parse();
-    match rate {
-        Ok(r) => Some(r),
-        Err(_) => None,
-    }
+    sub3.parse().ok()
 }
 
 impl LateState {
 
-    fn new() -> Self {
+    fn new(profiles: Vec<LateProfile>) -> Self {
         Self {
             theme: Theme::Dark,
             buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
@@ -140,7 +133,8 @@ impl LateState {
             sample_rate: get_current_sample_rate(),
             sr_text: String::new(),
             profile: Some("".to_string()),
-            profiles: combo_box::State::new(profile::load_profiles()),
+            profiles_names: combo_box::State::new(profile::get_profile_names(&profiles)),
+            profiles,
             profile_save_name: "".to_string(),
         }
     }
@@ -186,18 +180,22 @@ impl LateState {
                 }
             }
             Message::SaveProfile=> {
-                profile::save_state(LateProfile{
+                let new_profile = LateProfile {
                     name: self.profile_save_name.clone(),
                     sample_rate: self.sample_rate.unwrap_or(0),
                     buffer_size: self.buffer_size.unwrap_or(0),
-                });
+                };
+                self.profiles.push(new_profile);
+
+                self.profiles_names = combo_box::State::new(profile::get_profile_names(&self.profiles));
+                profile::save_profiles(&self.profiles);
                 print!("Saving!");
             } 
             Message::LoadProfile(pro) => {
-                print!("Loading");
+                print!("Loading {}", pro);
             }
             Message::UpdateProfileSaveName(pro) => {
-                self.profile = Some(pro);
+                self.profile_save_name = pro;
             }
         }
     }
@@ -220,7 +218,7 @@ impl LateState {
             .on_submit(Message::SaveProfile);
             // .spacing(20);
         let profile_cbox = combo_box(
-            &self.profiles,
+            &self.profiles_names,
             "Profile",
             self.profile.as_ref(),
             Message::LoadProfile,
@@ -234,9 +232,7 @@ impl LateState {
             ]
             .spacing(20),
             row![
-                // te
                 profile_cbox,
-                // button("Placeholder: Load").on_press(Message::LoadProfile)
             ].spacing(20),
             row![
                 column![
@@ -268,7 +264,7 @@ impl LateState {
 
 impl Default for LateState {
     fn default() -> Self {
-        LateState::new()
+        LateState::new(profile::load_profiles())
     }
 }
 
