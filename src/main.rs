@@ -133,8 +133,8 @@ impl LateState {
             sample_rates: combo_box::State::new(get_available_sample_rates()),
             sample_rate: get_current_sample_rate(),
             sr_text: String::new(),
-            profile: Some("".to_string()),
             profiles_names: combo_box::State::new(profile::get_profile_names(&profiles)),
+            profile: profile::get_current_if_any(&profiles, get_current_sample_rate(), get_current_buffer_size()), //Some("".to_string()),
             profiles,
             profile_save_name: "".to_string(),
         }

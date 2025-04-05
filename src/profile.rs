@@ -121,4 +121,16 @@ pub fn remove_profile(profiles: &mut Vec<LateProfile>, name: &str) {
     }
 }
 
-
+pub fn get_current_if_any(profiles: &Vec<LateProfile>, sample_rate: Option<u32>, buffer_size: Option<u32>) -> Option<String> {
+    let s = sample_rate.unwrap_or(0);
+    let b = buffer_size.unwrap_or(0);
+    for profile in profiles {
+        if profile.sample_rate == s
+            && profile.buffer_size == b {
+            // if there are multiple profiles with the same name, we return the first one.
+            // there is no way to know which one the user wanted.
+            return Some(profile.name.clone());
+        }
+    }
+    None
+}
