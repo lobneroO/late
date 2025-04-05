@@ -1,16 +1,37 @@
 // (C) Tim Lobner
 
 use std::process::{Command, Stdio};
-use iced::widget::{center, column, row, combo_box, text, pick_list};
+use iced::widget::{center, column, row, combo_box, text, pick_list, button};
 use iced::{Element, Theme};
+use serde::{Serialize, Deserialize};
+use std::path::Path;
+use std::path::PathBuf;
+use std::fs::{self, File};
+
+static CONFIG_NAME: &str = "late_config.json";
 
 #[derive(Debug, Clone)]
 enum Message {
     ThemeChanged(Theme),
     UpdateBufferSize(u32),
     UpdateSampleRate(u32),
+    SaveCurrentSettingsAsProfile,
+    LoadProfile, // TODO: needs to be easily choosable in combobox
 }
 
+/// Extra state which copies LateState::buffer_size and LateState::sample_rate
+/// in order to easily serialize and deserialize them.
+/// Serialization is meant for profiles a user may create.
+/// E.g: A recording profile (with low latency) and a mixing / everyday profile
+/// (with moderate latency allowing for larger buffer sizes)
+#[derive(Serialize, Deserialize)]
+struct PipewireForceState {
+    buffer_size: u32,
+    sample_rate: u32
+}
+
+/// The LateState is the state of the GUI. It encompasses the current buffer size
+/// and sampling rate, as well as the theme and all possible options
 struct LateState {
     theme: Theme,
 
@@ -169,6 +190,16 @@ impl LateState {
                     Err(e) => println!("error setting sample rate: {e}"),
                 }
             }
+            Message::SaveCurrentSettingsAsProfile => {
+                save_state(PipewireForceState{
+                    sample_rate: self.sample_rate.unwrap_or(0),
+                    buffer_size: self.buffer_size.unwrap_or(0),
+                });
+                print!("Saving!");
+            } 
+            Message::LoadProfile => {
+                print!("Loading");
+            }
         }
     }
 
@@ -203,7 +234,11 @@ impl LateState {
                     sample_rate_cbox,
                 ],
             ]
-            .spacing(20)
+            .spacing(20),
+            row![
+                button("Save Profile").on_press(Message::SaveCurrentSettingsAsProfile),
+                button("Placeholder: Load").on_press(Message::LoadProfile)
+            ].spacing(20)
         ]
         .spacing(20)
         .padding(20)
@@ -259,6 +294,71 @@ impl LateState{
     }
 }
 
+fn ensure_config_file() -> std::io::Result<PathBuf> {
+    let home_opt = home::home_dir();
+    if home_opt.is_some() {
+        let mut config = home_opt.unwrap();
+        config.push(".confg/late");
+
+        // ensure we can fetch the config dir and exists state
+        let config_dir_exists = fs::exists(&config);
+        if config_dir_exists.is_err() {
+            return Err(config_dir_exists.err().unwrap());
+        }
+
+        // ensure we have a config dir 
+        if !fs::exists(&config).unwrap() {
+            let result = fs::create_dir(&config);
+            if result.is_err() {
+                return Err(result.err().unwrap());
+            }
+        }
+
+        // ensure we can fetch the config file and its exists state
+        config.push(CONFIG_NAME);
+
+        let config_file_exists = fs::exists(&config);
+        if config_file_exists.is_err() {
+            return Err(config_file_exists.err().unwrap());
+        }
+
+        // ensure we have a config file
+        if !fs::exists(&config).unwrap() {
+            let result = File::create(&config);
+            if result.is_err() {
+                return Err(result.err().unwrap());
+            }
+        }
+
+        return Ok(config);
+    }
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        "Cannot find home directory!"))
+
+
+}
+
+fn save_state(state: PipewireForceState) {
+    let serialized = serde_json::to_string(&state);
+    println!("serialized = {}", serialized.unwrap());
+    let config_file = match ensure_config_file(){
+        Ok(c) => c,
+        Err(e) => { 
+            print!("{}", e);
+            return;
+        }
+    };
+
+    match File::open(config_file) {
+        Ok(_) => print!(""),
+        Err(e) => {
+        print!("{}", e);
+    }
+    }
+
+}
+
 fn main() -> iced::Result {
     let icon = iced::window::icon::from_file("resources/late.ico");
     let ico_opt: Option<iced::window::Icon> = icon.ok();
@@ -279,7 +379,7 @@ fn main() -> iced::Result {
 
     iced::application("Late - Pipewire Preferences", LateState::update, LateState::view)
         .theme(LateState::theme)
-        .window_size(iced::Size::new(480.0, 200.0))
+        .window_size(iced::Size::new(480.0, 230.0))
         .window(win_settings)
         .run()
 }
