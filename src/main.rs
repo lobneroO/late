@@ -4,8 +4,12 @@ use std::process::{Command, Stdio};
 use iced::widget::{center, column, row, combo_box, text, pick_list, text_input, button};
 use iced::{Element, Theme};
 
+mod paths;
 mod profile;
 use profile::LateProfile;
+mod serde_helper;
+mod config;
+use config::LateConfig;
 
 
 #[derive(Debug, Clone)]
@@ -22,7 +26,7 @@ enum Message {
 /// The LateState is the state of the GUI. It encompasses the current buffer size
 /// and sampling rate, as well as the theme and all possible options
 struct LateState {
-    theme: Theme,
+    config: LateConfig,
 
     buffer_sizes: combo_box::State<u32>,
     buffer_size: Option<u32>,
@@ -124,9 +128,9 @@ fn get_current_buffer_size() -> Option<u32> {
 
 impl LateState {
 
-    fn new(profiles: Vec<LateProfile>) -> Self {
+    fn new(config: LateConfig, profiles: Vec<LateProfile>) -> Self {
         Self {
-            theme: Theme::Dark,
+            config,
             buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
             buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
@@ -143,7 +147,8 @@ impl LateState {
     fn update(&mut self, message: Message) {
         match message {
             Message::ThemeChanged(theme) => {
-                self.theme = theme;
+                self.config.theme = theme;
+                config::save_config(&self.config);
             }
             Message::UpdateBufferSize(buf_size) => {
                 self.buffer_size = Some(buf_size);
@@ -251,7 +256,7 @@ impl LateState {
             row![
                 column![
                     text("Theme:"),
-                    pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged),
+                    pick_list(Theme::ALL, Some(&self.config.theme), Message::ThemeChanged),
                 ]
             ]
             .spacing(20),
@@ -293,13 +298,14 @@ impl LateState {
     }
 
     fn theme(&self) -> Theme {
-        self.theme.clone()
+        self.config.theme.clone()
     }
 }
 
 impl Default for LateState {
     fn default() -> Self {
-        LateState::new(profile::load_profiles())
+        let theme = config::load_config();
+        LateState::new(theme, profile::load_profiles())
     }
 }
 

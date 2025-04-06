@@ -4,9 +4,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use serde::{Serialize, Deserialize};
 
-// TODO: save late's state (e.g. theme chosen)
-// static CONFIG_NAME: &str = "late_config.json";
-static PROFILES_NAME: &str = "late_profiles.json";
+use crate::paths::{CONFIG_PATH, PROFILES_NAME};
 
 /// Extra state which copies LateState::buffer_size and LateState::sample_rate
 /// in order to easily serialize and deserialize them.
@@ -23,11 +21,11 @@ pub struct LateProfile {
     pub sample_rate: u32
 }
 
-pub fn ensure_config_file() -> std::io::Result<PathBuf> {
+pub fn ensure_profiles_file() -> std::io::Result<PathBuf> {
     let home_opt = home::home_dir();
     if home_opt.is_some() {
         let mut config = home_opt.unwrap();
-        config.push(".config/late");
+        config.push(CONFIG_PATH);
 
         // ensure we can fetch the config dir and exists state
         let config_dir_exists = fs::exists(&config);
@@ -64,13 +62,11 @@ pub fn ensure_config_file() -> std::io::Result<PathBuf> {
     Err(std::io::Error::new(
         std::io::ErrorKind::Other,
         "Cannot find home directory!"))
-
-
 }
 
 pub fn save_profiles(state: &Vec<LateProfile>) {
     let serialized = serde_json::to_string(&state);
-    let config_file = match ensure_config_file(){
+    let config_file = match ensure_profiles_file(){
         Ok(c) => c,
         Err(e) => { 
             print!("{}", e);
@@ -79,13 +75,13 @@ pub fn save_profiles(state: &Vec<LateProfile>) {
     };
 
     let f = File::create(config_file);
-    write!(f.unwrap(), "{}", serialized.unwrap());
+    write!(f.unwrap(), "{}", serialized.unwrap())
+        .expect("Could not write profiles to file!");
 
 }
 
 pub fn load_profiles() -> Vec<LateProfile> {
-    let config_path = ensure_config_file().unwrap_or_default();
-    print!("Trying to read {}", config_path.to_str().unwrap());
+    let config_path = ensure_profiles_file().unwrap_or_default();
     let file_contents = fs::read_to_string(config_path)
         .expect("Could not read profiles file!");
     serde_json::from_str(&file_contents).unwrap_or(vec![])
