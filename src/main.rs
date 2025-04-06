@@ -4,8 +4,12 @@ use std::process::{Command, Stdio};
 use iced::widget::{center, column, row, combo_box, text, pick_list, text_input, button};
 use iced::{Element, Theme};
 
+mod paths;
 mod profile;
 use profile::LateProfile;
+mod serde_helper;
+mod config;
+use config::LateConfig;
 
 
 #[derive(Debug, Clone)]
@@ -124,9 +128,9 @@ fn get_current_buffer_size() -> Option<u32> {
 
 impl LateState {
 
-    fn new(profiles: Vec<LateProfile>) -> Self {
+    fn new(config: LateConfig, profiles: Vec<LateProfile>) -> Self {
         Self {
-            theme: Theme::Dark,
+            theme: config.theme,
             buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
             buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
@@ -299,7 +303,8 @@ impl LateState {
 
 impl Default for LateState {
     fn default() -> Self {
-        LateState::new(profile::load_profiles())
+        let theme = config::load_config();
+        LateState::new(theme, profile::load_profiles())
     }
 }
 
