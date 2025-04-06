@@ -26,7 +26,7 @@ enum Message {
 /// The LateState is the state of the GUI. It encompasses the current buffer size
 /// and sampling rate, as well as the theme and all possible options
 struct LateState {
-    theme: Theme,
+    config: LateConfig,
 
     buffer_sizes: combo_box::State<u32>,
     buffer_size: Option<u32>,
@@ -130,7 +130,7 @@ impl LateState {
 
     fn new(config: LateConfig, profiles: Vec<LateProfile>) -> Self {
         Self {
-            theme: config.theme,
+            config,
             buffer_sizes: combo_box::State::new(get_available_buffer_sizes()),
             buffer_size: get_current_buffer_size(),
             bs_text: String::new(),
@@ -147,7 +147,8 @@ impl LateState {
     fn update(&mut self, message: Message) {
         match message {
             Message::ThemeChanged(theme) => {
-                self.theme = theme;
+                self.config.theme = theme;
+                config::save_config(&self.config);
             }
             Message::UpdateBufferSize(buf_size) => {
                 self.buffer_size = Some(buf_size);
@@ -255,7 +256,7 @@ impl LateState {
             row![
                 column![
                     text("Theme:"),
-                    pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged),
+                    pick_list(Theme::ALL, Some(&self.config.theme), Message::ThemeChanged),
                 ]
             ]
             .spacing(20),
@@ -297,7 +298,7 @@ impl LateState {
     }
 
     fn theme(&self) -> Theme {
-        self.theme.clone()
+        self.config.theme.clone()
     }
 }
 
