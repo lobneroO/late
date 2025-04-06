@@ -75,7 +75,8 @@ pub fn save_profiles(state: &Vec<LateProfile>) {
     };
 
     let f = File::create(config_file);
-    write!(f.unwrap(), "{}", serialized.unwrap());
+    write!(f.unwrap(), "{}", serialized.unwrap())
+        .expect("Could not write profiles to file!");
 
 }
 

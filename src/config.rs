@@ -71,7 +71,8 @@ pub fn save_config(config: &LateConfig) {
     };
 
     let f = File::create(config_file);
-    write!(f.unwrap(), "{}", serialized.unwrap());
+    write!(f.unwrap(), "{}", serialized.unwrap())
+        .expect("Could not write config to file!");
 
 }
 
