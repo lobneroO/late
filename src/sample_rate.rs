@@ -1,6 +1,19 @@
 
 use std::process::{Command, Stdio};
 
+// this file does all the sample rate handling
+// sample rate will be given in Hz, and displayed with the unit
+// e.g.: 
+//      0 Hz
+//      22050 Hz
+//      24000 Hz
+//      etc
+//  However, the profile value will be a u32, which makes
+//  manually editing the json file a lot less error prone
+//
+//  for converting from u32 to String, use get_sample_rate_string,
+//  for converting from String to u32, use get_sample_rate_value
+
 pub fn get_available_sample_rates() -> Vec<u32> {
     vec![
         0, // acts as a reset
@@ -11,6 +24,25 @@ pub fn get_available_sample_rates() -> Vec<u32> {
         88200,
         96000,
     ]
+}
+
+pub fn get_sample_rate_value(rate_with_unit: &str) -> u32 {
+    rate_with_unit[..rate_with_unit.len()-3].parse::<u32>().unwrap()
+}
+
+pub fn get_sample_rate_string(rate: u32) -> String {
+    format!("{} Hz", rate)
+}
+
+pub fn get_sample_rates_with_units() -> Vec<String> {
+    let rates = get_available_sample_rates();
+    let mut rates_units = Vec::new();
+
+    for rate in rates {
+        rates_units.push(get_sample_rate_string(rate));
+    }
+
+    rates_units
 }
 
 pub fn get_current_sample_rate() -> Option<u32> {
@@ -42,18 +74,29 @@ pub fn get_current_sample_rate() -> Option<u32> {
     sub3.parse().ok()
 }
 
+pub fn get_current_sample_rate_with_units() -> Option<String> {
+    let rate = get_current_sample_rate();
+    match rate {
+        Some(r) => Some(get_sample_rate_string(r)),
+        None => None
+    }
+}
+
 pub fn set_sample_rate(rate: u32) {
+    // actually execute the change
+    let cmd = format!("pw-metadata -n settings 0 clock.force-rate {}", rate);
 
-                // actually execute the change
-                let cmd = format!("pw-metadata -n settings 0 clock.force-rate {}", rate);
+    let result = Command::new("sh")
+        .arg("-c")
+        .arg(cmd)
+        .output();
+    match result {
+        Ok(_) => println!("sample rate was set successfully!"),
+        Err(e) => println!("error setting sample rate: {e}"),
+    }
+}
 
-                let result = Command::new("sh")
-                    .arg("-c")
-                    .arg(cmd)
-                    .output();
-                match result {
-                    Ok(_) => println!("sample rate was set successfully!"),
-                    Err(e) => println!("error setting sample rate: {e}"),
-                }
+pub fn set_sample_rate_with_units(rate: &str) {
+    set_sample_rate(get_sample_rate_value(rate));
 }
 

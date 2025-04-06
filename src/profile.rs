@@ -17,7 +17,7 @@ pub struct LateProfile {
     pub name: String,
     /// the buffer size
     pub buffer_size: u32,
-    /// the sample rate
+    /// the sample rate (as a u32, not a String!)
     pub sample_rate: u32
 }
 
