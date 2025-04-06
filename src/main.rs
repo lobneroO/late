@@ -16,7 +16,7 @@ use config::LateConfig;
 #[derive(Debug, Clone)]
 enum Message {
     ThemeChanged(Theme),
-    UpdateBufferSize(u32),
+    UpdateBufferSize(String),
     UpdateSampleRate(String),
     SaveProfile,
     DeleteProfile,
@@ -29,10 +29,8 @@ enum Message {
 struct LateState {
     config: LateConfig,
 
-    buffer_sizes: combo_box::State<u32>,
-    buffer_size: Option<u32>,
-    // the text displayed when a buffer size is selected
-    bs_text: String,
+    buffer_sizes: combo_box::State<String>,
+    buffer_size: Option<String>,
     // sample rates. are u32 really, but we want to display a unit, so String it is
     sample_rates: combo_box::State<String>,
     sample_rate: Option<String>,
@@ -48,9 +46,8 @@ impl LateState {
     fn new(config: LateConfig, profiles: Vec<LateProfile>) -> Self {
         Self {
             config,
-            buffer_sizes: combo_box::State::new(buffer_size::get_available_buffer_sizes()),
-            buffer_size: buffer_size::get_current_buffer_size(),
-            bs_text: String::new(),
+            buffer_sizes: combo_box::State::new(buffer_size::get_available_buffer_sizes_with_latency()),
+            buffer_size: buffer_size::get_current_buffer_size_with_latency(),
             sample_rates: combo_box::State::new(sample_rate::get_sample_rates_with_units()),
             sample_rate: sample_rate::get_current_sample_rate_with_units(),
             profiles_names: combo_box::State::new(profile::get_profile_names(&profiles)),
@@ -69,15 +66,10 @@ impl LateState {
                 config::save_config(&self.config);
             }
             Message::UpdateBufferSize(buf_size) => {
-                self.buffer_size = Some(buf_size);
-                self.bs_text = 
-                    buf_size.to_string()
-                    + " (" 
-                    + &self.latency_as_str()
-                    + "ms)";
+                self.buffer_size = Some(buf_size.clone());
 
                 // actually execute the change
-                buffer_size::set_buffer_size(buf_size);
+                buffer_size::set_buffer_size_with_latency(&buf_size);
             }
             Message::UpdateSampleRate(rate) => {
                 self.sample_rate = Some(rate.clone());
@@ -90,7 +82,8 @@ impl LateState {
                     let profile = chosen.unwrap();
                     self.update(Message::UpdateSampleRate(
                         sample_rate::get_sample_rate_string(profile.sample_rate)));
-                    self.update(Message::UpdateBufferSize(profile.buffer_size));
+                    self.update(Message::UpdateBufferSize(
+                        buffer_size::get_buffer_size_string(profile.buffer_size)));
                     self.profile = Some(profile.name.clone());
                 } else if pro.is_empty() {
                     // most likely a delete has happened
@@ -114,7 +107,10 @@ impl LateState {
                     name: self.profile_save_name.clone(),
                     sample_rate: sample_rate::get_sample_rate_value(
                         &self.sample_rate.clone().unwrap_or("0 Hz".to_string())),
-                    buffer_size: self.buffer_size.unwrap_or(0),
+                    // TODO: a default value like with sample rate would be good,
+                    // but the latency depends on the sample rate
+                    buffer_size: buffer_size::get_buffer_size_value(
+                        &self.buffer_size.clone().unwrap()),
                 };
                 self.profiles.push(new_profile);
 
@@ -220,7 +216,7 @@ impl LateState{
     /// @returns latency in milliseconds
     fn latency(&self) -> f32 {
         if self.buffer_size.is_some() && self.sample_rate.is_some() {
-            let buf_size = self.buffer_size.unwrap() as f32;
+            let buf_size = buffer_size::get_buffer_size_value(&self.buffer_size.clone().unwrap()) as f32;
             let sample_rate = sample_rate::get_sample_rate_value(&self.sample_rate.clone().unwrap()) as f32;
             buf_size * 1000.0 / sample_rate
         }

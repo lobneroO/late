@@ -13,6 +13,31 @@ pub fn get_available_buffer_sizes() -> Vec<u32> {
     ]
 }
 
+pub fn get_buffer_size_value(buffer_size_with_info: &str) -> u32 {
+    // the buffer size info will have a latency added if possible.
+    // e.g. 128 (2.4ms)
+    // therefore find the first space and discard everything afterwards.
+    // if the sample rate is not set, then ther is no latency info, 
+    // e.g. 128
+    // so nothing needs to be discarded
+    buffer_size_with_info[..buffer_size_with_info.len()-3].parse::<u32>().unwrap()
+}
+
+pub fn get_buffer_size_string(rate: u32) -> String {
+    format!("{} (x ms)", rate)
+}
+
+pub fn get_available_buffer_sizes_with_latency() -> Vec<String> {
+    let sizes = get_available_buffer_sizes();
+    let mut sizes_latency = Vec::new();
+
+    for size in sizes {
+        sizes_latency.push(get_buffer_size_string(size));
+    }
+
+    sizes_latency
+}
+
 pub fn get_current_buffer_size() -> Option<u32> {
     // fetch the current sample rate by terminal command
     let cmd_str = "pw-metadata -n settings 0 clock.force-quantum";
@@ -42,6 +67,14 @@ pub fn get_current_buffer_size() -> Option<u32> {
     sub3.parse().ok()
 }
 
+pub fn get_current_buffer_size_with_latency() -> Option<String> {
+    let size = get_current_buffer_size();
+    match size {
+        Some(s) => Some(get_buffer_size_string(s)),
+        None => None
+    }
+}
+
 pub fn set_buffer_size(size: u32) {
     let cmd = format!("pw-metadata -n settings 0 clock.force-quantum {}", size);
 
@@ -52,3 +85,8 @@ pub fn set_buffer_size(size: u32) {
         .expect("");
 }
 
+/// Sets the buffer size with a string that (possibly) contains latency
+/// (this will not set the buffer size to achieve a certain latency!)
+pub fn set_buffer_size_with_latency(size: &str) {
+    set_buffer_size(get_buffer_size_value(size));
+}
