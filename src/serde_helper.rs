@@ -5,6 +5,7 @@
 // all in all, there is a lot to work around to get this to serialize
 // see https://serde.rs/remote-derive.html
 // TODO: the enum{Custom(Arc<Custom>)} makes all of this very tricky. therefore skip it for now
+// for this to work at all, remember to add feature "rc" to serde in the Cargo.toml
 use std::sync::Arc;
 use serde::{Serialize, Deserialize};
 use iced::Theme;
