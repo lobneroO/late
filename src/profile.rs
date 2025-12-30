@@ -25,14 +25,19 @@ pub struct LateProfile {
 
 pub fn ensure_profiles_file() -> std::io::Result<PathBuf> {
     let test_home = env::var("XDG_CONFIG_HOME").unwrap_or("NOPE".to_string());
-    let project_home = ProjectDirs::from("de", "new world labs", "late").unwrap().config_dir();
+    let mut phs: &str;
+    if let project_home = ProjectDirs::from("de", "new world labs", "late").unwrap().config_dir() {
+        let phd = project_home.to_str();
+        phs = phd.clone().unwrap();
+        println!("Project home: {phs}");
+    }
+
     let home_opt = home::home_dir();
     
     let hu = home_opt.clone();
     let hup = hu.unwrap();
     let hus = hup.to_str().clone().unwrap();
     println!("Standard home: {hus}");
-    println!("Project home: {project_home}");
     println!("XDG Config home: {test_home}");
     
     if home_opt.is_some() {
