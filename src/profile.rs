@@ -1,7 +1,9 @@
 
+use std::env;
 use std::path::PathBuf;
 use std::fs::{self, File};
 use std::io::Write;
+use directories::ProjectDirs;
 use serde::{Serialize, Deserialize};
 
 use crate::paths::{CONFIG_PATH, PROFILES_NAME};
@@ -22,7 +24,17 @@ pub struct LateProfile {
 }
 
 pub fn ensure_profiles_file() -> std::io::Result<PathBuf> {
+    let test_home = env::var("XDG_CONFIG_HOME").unwrap_or("NOPE".to_string());
+    let project_home = ProjectDirs::from("de", "new world labs", "late").unwrap().config_dir();
     let home_opt = home::home_dir();
+    
+    let hu = home_opt.clone();
+    let hup = hu.unwrap();
+    let hus = hup.to_str().clone().unwrap();
+    println!("Standard home: {hus}");
+    println!("Project home: {project_home}");
+    println!("XDG Config home: {test_home}");
+    
     if home_opt.is_some() {
         let mut config = home_opt.unwrap();
         config.push(CONFIG_PATH);

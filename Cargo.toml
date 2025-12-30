@@ -12,3 +12,8 @@ serde_json = "1.0"
 # since late will only be useful on Linux, it shouldn't matter,
 # but the crate looks reasonable, too
 home = "0.5.11"
+# flatpak suggest using XDG_CONFIG_HOME. if not in flatpak,
+# this should default to user's home. to have both available,
+# the directories-rs crate can be used instead of the home crate
+# https://codeberg.org/dirs/directories-rs
+directories = "5.0"
