@@ -1,12 +1,10 @@
 
-use std::env;
 use std::path::PathBuf;
 use std::fs::{self, File};
 use std::io::Write;
-use directories::ProjectDirs;
 use serde::{Serialize, Deserialize};
 
-use crate::paths::{CONFIG_PATH, PROFILES_NAME};
+use crate::paths::{get_config_path, get_profiles_path};
 
 /// Extra state which copies LateState::buffer_size and LateState::sample_rate
 /// in order to easily serialize and deserialize them.
@@ -24,57 +22,43 @@ pub struct LateProfile {
 }
 
 pub fn ensure_profiles_file() -> std::io::Result<PathBuf> {
-    let test_home = env::var("XDG_CONFIG_HOME").unwrap_or("NOPE".to_string());
-    let mut phs: &str;
-    if let project_home = ProjectDirs::from("de", "new world labs", "late").unwrap().config_dir() {
-        let phd = project_home.to_str();
-        phs = phd.clone().unwrap();
-        println!("Project home: {phs}");
-    }
-
-    let home_opt = home::home_dir();
+    let config_path_opt = get_config_path();
     
-    let hu = home_opt.clone();
-    let hup = hu.unwrap();
-    let hus = hup.to_str().clone().unwrap();
-    println!("Standard home: {hus}");
-    println!("XDG Config home: {test_home}");
-    
-    if home_opt.is_some() {
-        let mut config = home_opt.unwrap();
-        config.push(CONFIG_PATH);
+    if let Some(config_path) = config_path_opt {
 
         // ensure we can fetch the config dir and exists state
-        let config_dir_exists = fs::exists(&config);
+        let config_dir_exists = fs::exists(&config_path);
         if config_dir_exists.is_err() {
             return Err(config_dir_exists.err().unwrap());
         }
 
-        // ensure we have a config dir 
-        if !fs::exists(&config).unwrap() {
-            let result = fs::create_dir(&config);
+        // ensure we have a config directory
+        if !fs::exists(&config_path).unwrap() {
+            let result = fs::create_dir(&config_path);
             if result.is_err() {
                 return Err(result.err().unwrap());
             }
         }
+    }
 
-        // ensure we can fetch the config file and its exists state
-        config.push(PROFILES_NAME);
+    // ensure we can fetch the config file and its exists state
+    let profiles_path_opt = get_profiles_path();
+    if let Some(profiles_path) = profiles_path_opt {
 
-        let config_file_exists = fs::exists(&config);
+        let config_file_exists = fs::exists(&profiles_path);
         if config_file_exists.is_err() {
             return Err(config_file_exists.err().unwrap());
         }
 
         // ensure we have a config file
-        if !fs::exists(&config).unwrap() {
-            let result = File::create(&config);
+        if !fs::exists(&profiles_path).unwrap() {
+            let result = File::create(&profiles_path);
             if result.is_err() {
                 return Err(result.err().unwrap());
             }
         }
 
-        return Ok(config);
+        return Ok(profiles_path);
     }
     Err(std::io::Error::new(
         std::io::ErrorKind::Other,

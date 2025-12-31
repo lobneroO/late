@@ -93,8 +93,7 @@ impl LateState {
             }
             Message::UpdateProfile(pro) => {
                 let chosen = profile::choose_profile(&self.profiles, &pro);
-                if chosen.is_some() {
-                    let profile = chosen.unwrap();
+                if let Some(profile) = chosen {
                     self.update(Message::UpdateSampleRate(profile.sample_rate));
                     self.update(Message::UpdateBufferSize(profile.buffer_size));
                     self.profile = Some(profile.name.clone());

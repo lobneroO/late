@@ -4,10 +4,8 @@ use std::path::PathBuf;
 use std::fs::{self, File};
 use std::io::Write;
 use serde::{Serialize, Deserialize};
+use crate::paths::get_config_path;
 use crate::serde_helper::ThemeDef;
-
-use crate::paths::CONFIG_PATH;
-use crate::paths::CONFIG_NAME;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct LateConfig {
@@ -18,42 +16,43 @@ pub struct LateConfig {
 // TODO: pretty much the same function as ensure_profiles_file, 
 // combine the shared code
 pub fn ensure_config_file() -> std::io::Result<PathBuf> {
-    let home_opt = home::home_dir();
-    if home_opt.is_some() {
-        let mut config = home_opt.unwrap();
-        config.push(CONFIG_PATH);
+    let config_path_opt = get_config_path();
+    
+    if let Some(config_path) = config_path_opt {
 
         // ensure we can fetch the config dir and exists state
-        let config_dir_exists = fs::exists(&config);
+        let config_dir_exists = fs::exists(&config_path);
         if config_dir_exists.is_err() {
             return Err(config_dir_exists.err().unwrap());
         }
 
-        // ensure we have a config dir 
-        if !fs::exists(&config).unwrap() {
-            let result = fs::create_dir(&config);
+        // ensure we have a config directory
+        if !fs::exists(&config_path).unwrap() {
+            let result = fs::create_dir(&config_path);
             if result.is_err() {
                 return Err(result.err().unwrap());
             }
         }
+    }
 
-        // ensure we can fetch the config file and its exists state
-        config.push(CONFIG_NAME);
+    // ensure we can fetch the config file and its exists state
+    let config_path_opt = get_config_path();
+    if let Some(config_path) = config_path_opt {
 
-        let config_file_exists = fs::exists(&config);
+        let config_file_exists = fs::exists(&config_path);
         if config_file_exists.is_err() {
             return Err(config_file_exists.err().unwrap());
         }
 
         // ensure we have a config file
-        if !fs::exists(&config).unwrap() {
-            let result = File::create(&config);
+        if !fs::exists(&config_path).unwrap() {
+            let result = File::create(&config_path);
             if result.is_err() {
                 return Err(result.err().unwrap());
             }
         }
 
-        return Ok(config);
+        return Ok(config_path);
     }
     Err(std::io::Error::new(
         std::io::ErrorKind::Other,
