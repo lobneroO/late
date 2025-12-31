@@ -22,11 +22,12 @@ fn main() {
 
     // actually copy the resources folder
     let out_dir = get_output_path();
-    Command::new("cp")
+    let _ = Command::new("cp")
         .arg("-r")
         .arg("resources")
         .arg(&out_dir)
         .spawn()
-        .expect("failed to spawn copy process");
+        .expect("failed to spawn copy process")
+        .wait();
 }
 

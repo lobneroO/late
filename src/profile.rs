@@ -1,10 +1,9 @@
 
-use std::path::PathBuf;
 use std::fs::{self, File};
 use std::io::Write;
 use serde::{Serialize, Deserialize};
 
-use crate::paths::{get_config_path, get_profiles_path};
+use crate::paths::get_profiles_path;
 
 /// Extra state which copies LateState::buffer_size and LateState::sample_rate
 /// in order to easily serialize and deserialize them.
@@ -21,53 +20,9 @@ pub struct LateProfile {
     pub sample_rate: u32
 }
 
-pub fn ensure_profiles_file() -> std::io::Result<PathBuf> {
-    let config_path_opt = get_config_path();
-    
-    if let Some(config_path) = config_path_opt {
-
-        // ensure we can fetch the config dir and exists state
-        let config_dir_exists = fs::exists(&config_path);
-        if config_dir_exists.is_err() {
-            return Err(config_dir_exists.err().unwrap());
-        }
-
-        // ensure we have a config directory
-        if !fs::exists(&config_path).unwrap() {
-            let result = fs::create_dir(&config_path);
-            if result.is_err() {
-                return Err(result.err().unwrap());
-            }
-        }
-    }
-
-    // ensure we can fetch the config file and its exists state
-    let profiles_path_opt = get_profiles_path();
-    if let Some(profiles_path) = profiles_path_opt {
-
-        let config_file_exists = fs::exists(&profiles_path);
-        if config_file_exists.is_err() {
-            return Err(config_file_exists.err().unwrap());
-        }
-
-        // ensure we have a config file
-        if !fs::exists(&profiles_path).unwrap() {
-            let result = File::create(&profiles_path);
-            if result.is_err() {
-                return Err(result.err().unwrap());
-            }
-        }
-
-        return Ok(profiles_path);
-    }
-    Err(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "Cannot find home directory!"))
-}
-
 pub fn save_profiles(state: &Vec<LateProfile>) {
     let serialized = serde_json::to_string(&state);
-    let config_file = match ensure_profiles_file(){
+    let config_file = match get_profiles_path(){
         Ok(c) => c,
         Err(e) => { 
             print!("{}", e);
@@ -82,7 +37,7 @@ pub fn save_profiles(state: &Vec<LateProfile>) {
 }
 
 pub fn load_profiles() -> Vec<LateProfile> {
-    let config_path = ensure_profiles_file().unwrap_or_default();
+    let config_path = get_profiles_path().unwrap_or_default();
     let file_contents = fs::read_to_string(config_path)
         .expect("Could not read profiles file!");
     serde_json::from_str(&file_contents).unwrap_or(vec![])
