@@ -1,0 +1,41 @@
+id: de.newworldlabs.Late
+
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+ - org.freedesktop.Sdk.Extension.rust-stable
+command: late
+build-options:
+ append-path: /usr/lib/sdk/rust-stable/bin
+ build-args:
+ - --share=network # required for cargo to fetch dependencies
+finish-args:
+ - --socket=wayland
+ - --socket=fallback-x11
+ # for calling cli commands.
+ # we could (and will) use pipewire-rs for buffer settings,
+ # but restarting pipewire (systemctl --user restart pipewire.service)
+ # cannot be done that way so we will need the sandbox escape :(
+ - --talk-name=org.freedesktop.Flatpak 
+
+modules:
+ - name: late
+   buildsystem: simple
+   build-commands:
+     # build rust binary
+     - cargo build --release --verbose
+
+     # install binary into flatpak sandbox
+     - install -Dm755 target/release/late /app/bin/late
+
+     # install desktop file and metainfo meta data
+     - install -Dm644 data/de.newworldlabs.Late.desktop /app/share/applications/de.newworldlabs.Late.desktop
+     - install -Dm644 data/de.newworldlabs.Late.metainfo.xml /app/share/metainfo/de.newworldlabs.Late.metainfo.xml
+
+     # icon file
+     # - install -Dm644 data/de.newworldlabs.Late.svg /app/share/icons/hicolor/scalable/apps/de.newworldlabs.Late.svg
+
+    sources:
+      - type: dir
+        path: .

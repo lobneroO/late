@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>de.newworldlabs.Late</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Late</name>
+  <summary>GUI to set PipeWire buffer size and sample rate</summary>
+  
+  <description>
+    <p>
+      Late is a simple interface designed to manage PipeWire settings similar to how Jack used to work. 
+      It lets users change their buffer size and sample rate (and thus latency)
+    </p>
+  </description>
+
+  <launchable type="desktop-id">de.newworldlabs.Late.desktop</launchable>
+  <url type="homepage">https://github.com</url>
+  
+  <provides>
+    <binary>late</binary>
+  </provides>
+</component>
