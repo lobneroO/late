@@ -15,21 +15,25 @@ pub fn get_available_sample_rates() -> Vec<u32> {
 
 pub fn get_current_sample_rate() -> Option<u32> {
     // fetch the current sample rate by terminal command
-    let cmd_str = "pw-metadata -n settings 0 clock.force-rate";
-
+    let prgrm_call = "pw-metadata";
+    let cmd_args = ["-n", "settings", "0", "clock.force-rate"];
 
     let output = if std::path::Path::new("/.flatpak-info").exists() {
+        println!("using flatpak-spawn --host");
         Command::new("flatpak-spawn")
             .arg("--host")
-            .arg(cmd_str)
+            .arg(prgrm_call)
+            .args(cmd_args)
             .stdout(Stdio::piped())
             .output()
             .unwrap()
     } else {
+        println!("using sh -c");
         Command::new("sh")
             .arg("-c")
             .stdout(Stdio::piped())
-            .arg(cmd_str)
+            .arg(prgrm_call)
+            .args(cmd_args)
             .output()
             .unwrap()
     };
@@ -40,8 +44,10 @@ pub fn get_current_sample_rate() -> Option<u32> {
     * update: id:0 key:'clock.force-rate' value:'48000' type:''
     */
     let cmd_return_str = String::from_utf8(output.stdout).unwrap();
+    println!("{}", cmd_return_str);
     // first remove everything until "value:'"
     let sub1 = &cmd_return_str[cmd_return_str.find("value:'").unwrap_or(0)..];
+    println!("{}", sub1);
     // now remove the "value:'" itself
     let sub2 = &sub1["value:'".len()..];
     // lastly, remove everything after the (now) first "'",

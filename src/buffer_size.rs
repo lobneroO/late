@@ -16,13 +16,14 @@ pub fn get_available_buffer_sizes() -> Vec<u32> {
 pub fn get_current_buffer_size() -> Option<u32> {
     // fetch the current sample rate by terminal command
     let cmd_str = "pw-metadata -n settings 0 clock.force-quantum";
+    let prgrm_call = "pw-metadata";
+    let cmd_args = ["-n", "settings", "0", "clock.force-quantum"];
 
     let output = if std::path::Path::new("/.flatpak-info").exists() {
         Command::new("flatpak-spawn")
             .arg("--host")
-            .arg("sh")
-            .arg("-c")
-            .arg(cmd_str)
+            .arg(prgrm_call)
+            .args(cmd_args)
             .stdout(Stdio::piped())
             .output()
             .unwrap()
@@ -30,7 +31,8 @@ pub fn get_current_buffer_size() -> Option<u32> {
         Command::new("sh")
             .arg("-c")
             .stdout(Stdio::piped())
-            .arg(cmd_str)
+            .arg(prgrm_call)
+            .args(cmd_args)
             .output()
             .unwrap()
     };
