@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Late
+Comment=GUI to set buffer size and sample rate in PipeWire
+Exec=late
+Icon=de.newworldlabs.Late
+Terminal=false
+Categories=AudioVideo;Audio;Utility;

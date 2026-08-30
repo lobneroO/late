@@ -93,8 +93,7 @@ impl LateState {
             }
             Message::UpdateProfile(pro) => {
                 let chosen = profile::choose_profile(&self.profiles, &pro);
-                if chosen.is_some() {
-                    let profile = chosen.unwrap();
+                if let Some(profile) = chosen {
                     self.update(Message::UpdateSampleRate(profile.sample_rate));
                     self.update(Message::UpdateBufferSize(profile.buffer_size));
                     self.profile = Some(profile.name.clone());
@@ -134,13 +133,20 @@ impl LateState {
                 self.profile_save_name = pro;
             }
             Message::RestartPipewire => {
-                // actually execute the change
-                let cmd = format!("systemctl --user restart pipewire.service");
+                // actually execute the change. take care of flatpak specifics if necessary
+                let restart_cmd = "systemctl --user restart pipewire.service";
+                let mut cmd = if std::path::Path::new("/.flatpak-info").exists() {
+                    // we're in the sandbox
+                    let mut c = std::process::Command::new("flatpak-spawn");
+                    c.args(["--host", "sh", "-c", restart_cmd]);
+                    c
+                } else {
+                    let mut c = std::process::Command::new("sh");
+                    c.args(["-c", restart_cmd]);
+                    c
+                };
+                let result = cmd.output();
 
-                let result = std::process::Command::new("sh")
-                    .arg("-c")
-                    .arg(cmd)
-                    .output();
                 match result {
                     Ok(_) => println!("pipewire was restarted"),
                     Err(e) => println!("error restarting pipewire: {e}"),

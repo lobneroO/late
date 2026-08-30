@@ -1,0 +1,43 @@
+id: de.newworldlabs.Late
+
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+ - org.freedesktop.Sdk.Extension.rust-stable
+command: late
+build-options:
+ append-path: /usr/lib/sdk/rust-stable/bin
+ build-args:
+ - --share=network # required for cargo to fetch dependencies
+finish-args:
+ - --socket=wayland
+ - --socket=fallback-x11
+ # for (among other things) restarting pipewire, we do the CLI command
+ # this requires "flatpak-spawn --host", which needs out-of-sandbox permissions
+ - --talk-name=org.freedesktop.Flatpak 
+ # allow querying socket communication with the host (i.e. asking and setting
+ # buffer size + sample rate)
+ - --filesystem=xdg-run/pipewire-0:ro
+
+modules:
+ - name: late
+   buildsystem: simple
+   build-commands:
+     # build rust binary
+     - cargo build --release --verbose
+
+     # install binary into flatpak sandbox
+     - install -Dm755 target/release/late /app/bin/late
+
+     # install desktop file and metainfo meta data
+     - install -Dm644 data/de.newworldlabs.Late.desktop /app/share/applications/de.newworldlabs.Late.desktop
+     - install -Dm644 data/de.newworldlabs.Late.metainfo.xml /app/share/metainfo/de.newworldlabs.Late.metainfo.xml
+
+     # icon file
+     - install -d /app/share/icons/hicolor/128x128/apps/
+     - install -Dm644 resources/de.newworldlabs.Late.png /app/share/icons/hicolor/128x128/apps/de.newworldlabs.Late.png
+
+   sources:
+     - type: dir
+       path: .

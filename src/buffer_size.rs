@@ -16,13 +16,26 @@ pub fn get_available_buffer_sizes() -> Vec<u32> {
 pub fn get_current_buffer_size() -> Option<u32> {
     // fetch the current sample rate by terminal command
     let cmd_str = "pw-metadata -n settings 0 clock.force-quantum";
+    let prgrm_call = "pw-metadata";
+    let cmd_args = ["-n", "settings", "0", "clock.force-quantum"];
 
-    let output = Command::new("sh")
-        .arg("-c")
-        .stdout(Stdio::piped())
-        .arg(cmd_str)
-        .output()
-        .unwrap();
+    let output = if std::path::Path::new("/.flatpak-info").exists() {
+        Command::new("flatpak-spawn")
+            .arg("--host")
+            .arg(prgrm_call)
+            .args(cmd_args)
+            .stdout(Stdio::piped())
+            .output()
+            .unwrap()
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .stdout(Stdio::piped())
+            .arg(prgrm_call)
+            .args(cmd_args)
+            .output()
+            .unwrap()
+    };
 
     // the response lookse something like this
     /*
@@ -45,10 +58,22 @@ pub fn get_current_buffer_size() -> Option<u32> {
 pub fn set_buffer_size(size: u32) {
     let cmd = format!("pw-metadata -n settings 0 clock.force-quantum {}", size);
 
-    Command::new("sh")
-        .arg("-c")
-        .arg(cmd)
-        .output()
-        .expect("");
+    let _ = if std::path::Path::new("/.flatpak-info").exists() {
+        Command::new("flatpak-spawn")
+            .arg("--host")
+            .arg("sh")
+            .arg("-c")
+            .arg(cmd)
+            .stdout(Stdio::piped())
+            .output()
+            .expect("")
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .stdout(Stdio::piped())
+            .arg(cmd)
+            .output()
+            .expect("")
+    };
 }
 
