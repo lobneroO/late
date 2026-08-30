@@ -13,11 +13,12 @@ build-options:
 finish-args:
  - --socket=wayland
  - --socket=fallback-x11
- # for calling cli commands.
- # we could (and will) use pipewire-rs for buffer settings,
- # but restarting pipewire (systemctl --user restart pipewire.service)
- # cannot be done that way so we will need the sandbox escape :(
+ # for (among other things) restarting pipewire, we do the CLI command
+ # this requires "flatpak-spawn --host", which needs out-of-sandbox permissions
  - --talk-name=org.freedesktop.Flatpak 
+ # allow querying socket communication with the host (i.e. asking and setting
+ # buffer size + sample rate)
+ - --filesystem=xdg-run/pipewire-0:ro
 
 modules:
  - name: late
@@ -34,8 +35,8 @@ modules:
      - install -Dm644 data/de.newworldlabs.Late.metainfo.xml /app/share/metainfo/de.newworldlabs.Late.metainfo.xml
 
      # icon file
-     # - install -Dm644 data/de.newworldlabs.Late.svg /app/share/icons/hicolor/scalable/apps/de.newworldlabs.Late.svg
+     - install -Dm644 resources/late.ico /app/share/icons/hicolor/scalable/apps/de.newworldlabs.Late.ico
 
-    sources:
-      - type: dir
-        path: .
+   sources:
+     - type: dir
+       path: .

@@ -17,12 +17,22 @@ pub fn get_current_sample_rate() -> Option<u32> {
     // fetch the current sample rate by terminal command
     let cmd_str = "pw-metadata -n settings 0 clock.force-rate";
 
-    let output = Command::new("sh")
-        .arg("-c")
-        .stdout(Stdio::piped())
-        .arg(cmd_str)
-        .output()
-        .unwrap();
+
+    let output = if std::path::Path::new("/.flatpak-info").exists() {
+        Command::new("flatpak-spawn")
+            .arg("--host")
+            .arg(cmd_str)
+            .stdout(Stdio::piped())
+            .output()
+            .unwrap()
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .stdout(Stdio::piped())
+            .arg(cmd_str)
+            .output()
+            .unwrap()
+    };
 
     // the response lookse something like this
     /*
@@ -44,16 +54,26 @@ pub fn get_current_sample_rate() -> Option<u32> {
 
 pub fn set_sample_rate(rate: u32) {
 
-                // actually execute the change
-                let cmd = format!("pw-metadata -n settings 0 clock.force-rate {}", rate);
+    // actually execute the change
+    let cmd = format!("pw-metadata -n settings 0 clock.force-rate {}", rate);
 
-                let result = Command::new("sh")
-                    .arg("-c")
-                    .arg(cmd)
-                    .output();
-                match result {
-                    Ok(_) => println!("sample rate was set successfully!"),
-                    Err(e) => println!("error setting sample rate: {e}"),
-                }
+    let result = if std::path::Path::new("/.flatpak-info").exists() {
+        Command::new("flatpak-spawn")
+            .arg("--host")
+            .arg(cmd)
+            .stdout(Stdio::piped())
+            .output()
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .stdout(Stdio::piped())
+            .arg(cmd)
+            .output()
+    };
+
+    match result {
+        Ok(_) => println!("sample rate was set successfully!"),
+        Err(e) => println!("error setting sample rate: {e}"),
+    }
 }
 
