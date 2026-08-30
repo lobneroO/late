@@ -22,6 +22,7 @@ enum Message {
     DeleteProfile,
     UpdateProfile(String),
     UpdateProfileSaveName(String),
+    RestartPipewire,
 }
 
 /// The LateState is the state of the GUI. It encompasses the current buffer size
@@ -132,6 +133,19 @@ impl LateState {
             Message::UpdateProfileSaveName(pro) => {
                 self.profile_save_name = pro;
             }
+            Message::RestartPipewire => {
+                // actually execute the change
+                let cmd = format!("systemctl --user restart pipewire.service");
+
+                let result = std::process::Command::new("sh")
+                    .arg("-c")
+                    .arg(cmd)
+                    .output();
+                match result {
+                    Ok(_) => println!("pipewire was restarted"),
+                    Err(e) => println!("error restarting pipewire: {e}"),
+                }
+            }
         }
     }
 
@@ -194,6 +208,11 @@ impl LateState {
                     ].spacing(20),
                 ],
             ].spacing(20),
+            row![
+                column![
+                    button("Restart Pipewire").on_press(Message::RestartPipewire),
+                ]
+            ]
         ]
         .spacing(20)
         .padding(20)
@@ -239,7 +258,7 @@ fn main() -> iced::Result {
     let icon = iced::window::icon::from_file("resources/late.ico");
     let ico_opt: Option<iced::window::Icon> = icon.ok();
     let win_settings = iced::window::Settings {
-        size: iced::Size::new(480.0, 330.0),
+        size: iced::Size::new(480.0, 370.0),
         position: iced::window::Position::Default,
         min_size: None,
         max_size: None,

@@ -13,3 +13,5 @@ At the moment, no checking is done if your hardware actually supports any of the
 If you change these values, while a program is running that uses any of these settings, the running program may crash.
 E.g. running ML Sound Lab Amped Roots via wine will crash when changing either buffer size or sample rate.
 
+For convenience, there is also a "Restart Pipewire" button, which calls `systemctl --user restart pipewire.service`.
+Some applications will likely crash when restarting pipewire, but it is useful if you're editing your settings a lot.
